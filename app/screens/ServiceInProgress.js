@@ -39,7 +39,9 @@ export default function ServiceInProgress({navigation}) {
             let token = await AsyncStorage.getItem('professionalToken');
             let _currentRequestId = JSON.parse( await AsyncStorage.getItem('currentRequestInProgress') );
             let _currentprofessionalId = await AsyncStorage.getItem('professionalId');
-            
+            AsyncStorage.removeItem("stateInProgress");
+            AsyncStorage.removeItem("isStateInProgress");
+
             let data = { status: 'encerrado' };
             
             const response = await axios.put(BASE_URL + '/api/requests/' + _currentRequestId, data, {headers: { 'Authorization': 'Bearer ' + token }});
@@ -51,7 +53,6 @@ export default function ServiceInProgress({navigation}) {
                     professionalId: _currentprofessionalId,
                 });
 
-                AsyncStorage.setItem('currentStatus', JSON.stringify(true));
                 ToastAndroid.show( 'Parabéns, serviço encerrado!', ToastAndroid.SHORT); 
                 navigation.navigate("Main");
             }

@@ -64,6 +64,7 @@ export default function RequestDetails({navigation}) {
             const _currentRequestId = JSON.parse( await AsyncStorage.getItem('currentRequestInProgress') );
             let data = { status: 'andamento' };
             const _currentprofessionalId = await AsyncStorage.getItem('professionalId');
+            await AsyncStorage.setItem("stateInProgress", "comecou_servico");
             
             const response = await axios.put(BASE_URL + '/api/requests/' + _currentRequestId, data, {headers: { 'Authorization': 'Bearer ' + token }});
             
@@ -136,7 +137,6 @@ export default function RequestDetails({navigation}) {
     )
 }
 
-
 const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -171,5 +171,3 @@ const styles = StyleSheet.create({
         letterSpacing: 10, 
     },
   });
-
-  

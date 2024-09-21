@@ -65,6 +65,8 @@ export default function RealTimeCallsScreen() {
       if (response.data) {
         updateAvailableStatus();
         await AsyncStorage.setItem('currentRequestInProgress', JSON.stringify(item._id));
+        await AsyncStorage.setItem("stateInProgress", "aceitou_chamado");
+        await AsyncStorage.setItem("isStateInProgress", "true");
         navigation.navigate("RequestDetails");
       }
     } catch (err) {
@@ -86,15 +88,19 @@ export default function RealTimeCallsScreen() {
         const chamado = JSON.parse(event.data);
         
         if (chamado.type == 'new_call') {
-          Vibration.vibrate([500, 500]);
+            Vibration.vibrate([500, 500]);
 
-          setCalls((prevCalls) => {
+            const chamadoResultId = chamado.result._id;
             const timeoutId = setTimeout(() => {
-              setCalls((currentCalls) => currentCalls.filter(c => c.result._id !== chamado.result._id));
+                setCalls((currentCalls) => 
+                    currentCalls.filter(c => c.result?._id !== chamadoResultId)
+                );
             }, time_miliseconds);
 
-            return [...prevCalls, { ...chamado.result, timeoutId }];
-          });
+            setCalls((prevCalls) => [
+                ...prevCalls,
+                { ...chamado.result, timeoutId }
+            ]);
         }
 
         if(chamado.type == 'accept_call') {
@@ -103,7 +109,8 @@ export default function RealTimeCallsScreen() {
           setCalls((currentCalls) => {
             let timeoutToClear = currentCalls.find(i => i._id == requestToToRemove).timeoutId;
             clearTimeout(timeoutToClear);
-            return currentCalls.filter(call => call.requestId !== requestToToRemove);
+            // return currentCalls.filter(call => call.requestId !== requestToToRemove);
+            return [];
           });
         }
     };
@@ -141,7 +148,7 @@ export default function RealTimeCallsScreen() {
             <View style={styles.item}>
               <View style={{ alignItems: 'flex-start'}}>
                 <Text style={{paddingVertical: 2, marginHorizontal: 5,}}>Você receberá</Text>
-                <Text style={styles.price}> {item.subtotal_price ? 'R$ ' + (parseFloat(item.subtotal_price.replace(',','.')) * 0.7).toFixed(2) : ''}</Text>
+                <Text style={styles.price}> {item.subtotal_price ? 'R$ ' + item.subtotal_price : ''}</Text>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -181,6 +188,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     marginBottom: 10,
+    borderRadius: 7,
+    backgroundColor: '#F1F1F1'
   },
   id: {
     fontSize: 18,

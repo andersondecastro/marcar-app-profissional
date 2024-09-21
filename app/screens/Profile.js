@@ -15,6 +15,9 @@ export default function Profile({navigation}) {
     const [email, setEmail] = useState(null);
     const [phone, setPhone] = useState(null);
     const [password, setPassword] = useState(null);
+    const [cpf, setCpf] = useState(null);
+    const [birthday, setBirthday] = useState(null);
+    const [picture, setPicture] = useState(null);
     const [profileId, setProfileId] = useState(null);
 
     const showToast = (value) => {
@@ -23,8 +26,9 @@ export default function Profile({navigation}) {
     
     const logout = async () => {
       let allStorageKeyItems = await AsyncStorage.getAllKeys();
-      allStorageKeyItems.forEach(async key => key != 'currentAddress' ? await AsyncStorage.removeItem(key) : null);
+      allStorageKeyItems.forEach(async key => await AsyncStorage.removeItem(key));
 
+      allStorageKeyItems.forEach(async key => await AsyncStorage.getItem(key));
       showToast('Nos vemos em breve!');
       navigation.navigate("LoginForm");
     }
@@ -40,6 +44,8 @@ export default function Profile({navigation}) {
             setName(response.data.name);
             setEmail(response.data.email);
             setPhone(response.data.phone);
+            setCpf(response.data.cpf);
+            setBirthday(response.data.birthday);
             setProfileId(response.data._id);
           } catch (err) {
             setError(err.message); 
@@ -74,7 +80,7 @@ export default function Profile({navigation}) {
         let token = await AsyncStorage.getItem('professionalToken');
         
         try {
-            let data = {name, email, phone}
+            let data = {name, email, phone, cpf, birthday, picture}
             if(password != '') data['password'] = password;
 
             const response = await axios.put(BASE_URL + '/api/professionals/me', data, {headers: { 'Authorization': 'Bearer ' + token }});
@@ -120,7 +126,19 @@ export default function Profile({navigation}) {
                 <Text style={styles.labelForm}>E-mail</Text>
                 <View style={styles.inputContainer}>
                     <TextInput placeholder='Informe seu e-mail' style={styles.inputTextForm} value={email} onChangeText={text => setEmail(text)} />
-                    <Image source={require('../../assets/mail.png')} style={{width: 15, height: 18, marginRight: 10,}} />
+                    <Image source={require('../../assets/mail.png')} style={{width: 18, height: 18, marginRight: 10,}} />
+                </View>
+
+                <Text style={styles.labelForm}>CPF</Text>
+                <View style={styles.inputContainer}>
+                    <TextInput placeholder='Informe seu CPF' style={styles.inputTextForm} value={cpf} onChangeText={text => setCpf(text)} keyboardType='numeric' />
+                    <Image source={require('../../assets/doc.png')} style={{width: 18, height: 16, marginRight: 10,}} />
+                </View>
+
+                <Text style={styles.labelForm}>Data de nascimento</Text>
+                <View style={styles.inputContainer}>
+                    <TextInput placeholder='Informe sua data de nascimento' style={styles.inputTextForm} value={birthday} onChangeText={text => setBirthday(text)} />
+                    <Image source={require('../../assets/birth.png')} style={{width: 18, height: 18, marginRight: 10,}} />
                 </View>
 
                 <Text style={styles.labelForm}>Telefone</Text>

@@ -26,10 +26,25 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#C91B1E"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAOpdZ5yzReKCQobwk3DAnPzGT_yrSDf4Q"
+        }
+      },
+      "package": "com.marcar.prestador"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9d45fcb8-d676-4b0d-9e3f-dea6c9d6815d"
+      }
     }
   }
 }

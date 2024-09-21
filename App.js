@@ -7,6 +7,7 @@ import axios from 'axios';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const [stateInProgress, setStateInProgress] = useState(null);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -17,6 +18,22 @@ export default function App() {
 
     checkLoginStatus();
   }, []);
+
+  useEffect(() => {
+    const checkLastState = async () => {
+      let isStateInProgress = JSON.parse( await AsyncStorage.getItem("isStateInProgress") );
+      console.log("[ is state: ", isStateInProgress, " - tipo:  ", typeof isStateInProgress , "]");
+
+      let stateInProgress = await AsyncStorage.getItem("stateInProgress");
+      console.log("what state: ", stateInProgress);
+
+      if(isStateInProgress) {
+        setStateInProgress(stateInProgress);
+      }
+    }
+
+    checkLastState();
+  }, [])
 
   const isTokenValid = async (token) => {
     if (!token) return false;
@@ -34,6 +51,6 @@ export default function App() {
   }
 
   return (
-    <AppNavigator isLoggedIn={isLoggedIn} />
+    <AppNavigator isLoggedIn={isLoggedIn} stateInProgress={stateInProgress} />
   )
 }

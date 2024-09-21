@@ -43,7 +43,7 @@ export default function RegisterForm({navigation}) {
                 <Text style={styles.labelForm}>E-mail</Text>
                 <View style={styles.inputContainer}>
                     <TextInput placeholder='Informe seu e-mail' style={styles.inputTextForm} value={email} onChangeText={text => setEmail(text)} keyboardType='email-address' />
-                    <Image source={require('../../assets/mail.png')} style={{width: 15, height: 18, marginRight: 10,}} />
+                    <Image source={require('../../assets/mail.png')} style={{width: 18, height: 18, marginRight: 10,}} />
                 </View>
 
                 <Text style={styles.labelForm}>Senha</Text>

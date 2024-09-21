@@ -12,15 +12,31 @@ import ChangeUnity from './app/screens/ChangeUnity';
 import AddUnity from './app/screens/AddUnity';
 import RequestDetails from './app/screens/RequestDetails';
 import ServiceInProgress from './app/screens/ServiceInProgress';
+import Finance from './app/screens/Finance';
 import FallbackTest from './app/screens/FallbackTest.js';
 import TabNavigator from './TabNavigation'; 
 
 const Stack = createStackNavigator();
 
-const AppNavigator = ({ isLoggedIn }) => {
+const AppNavigator = ({ isLoggedIn, stateInProgress }) => {
+  let routeToStart;
+  if( isLoggedIn ){
+    if(stateInProgress == 'aceitou_chamado')
+      routeToStart = 'RequestDetails';
+    else if(stateInProgress == 'aguardando_motorista')
+      routeToStart = 'RequestDetails';
+    else if(stateInProgress == 'comecou_servico')
+      routeToStart = 'ServiceInProgress';
+    else 
+      routeToStart = "Main";
+  } else {
+      routeToStart = "RegisterForm";
+  }
+  console.log("Iniciar na rota: " , routeToStart, " .... <<< estado atual: >>> ", stateInProgress);
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isLoggedIn ? "Main" : "RegisterForm"}>
+      <Stack.Navigator initialRouteName={routeToStart}>
         <Stack.Screen options={{ headerShown: false }} name="RegisterForm" component={RegisterForm} /> 
         <Stack.Screen options={{ headerShown: false }} name="LoginForm" component={LoginForm} />         
         <Stack.Screen options={{ title: "Editar meus dados" }} name="Profile" component={Profile} />         
@@ -31,6 +47,7 @@ const AppNavigator = ({ isLoggedIn }) => {
         <Stack.Screen options={{ headerShown: false }} name="Requests" component={Requests} />
         <Stack.Screen options={{ headerShown: false }} name="RequestDetails" component={RequestDetails} />
         <Stack.Screen options={{ headerShown: false }} name="ServiceInProgress" component={ServiceInProgress} />
+        <Stack.Screen options={{ headerShown: false }} name="Finance" component={Finance} />
         <Stack.Screen options={{ headerShown: false }} name="FallbackTest" component={FallbackTest} />
         <Stack.Screen options={{ headerShown: false }} name="Main" component={TabNavigator} />
       </Stack.Navigator>

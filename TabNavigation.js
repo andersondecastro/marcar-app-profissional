@@ -5,6 +5,7 @@ import { Image, StyleSheet, Text } from 'react-native';
 import Welcome from './app/screens/Welcome';
 import Activities from './app/screens/Activities';
 import Profile from './app/screens/Profile';
+import Finance from './app/screens/Finance';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,6 +22,8 @@ const TabNavigator = () => {
             icon = require('./assets/icons/list.png');
           } else if (route.name === 'Profile') {
             icon = require('./assets/icons/user.png');
+          } else if (route.name === 'Finance') {
+            icon = require('./assets/icons/finance.png');
           }
 
           return <Image source={icon} style={[styles.icon,  { tintColor: focused ? '#E42528' : '#888888' }]} />;
@@ -35,6 +38,8 @@ const TabNavigator = () => {
               iconTitleLabel = "Atividades";
             } else if (route.name === 'Profile') {
               iconTitleLabel = "Perfil";
+            } else if (route.name === 'Finance') {
+              iconTitleLabel = "Financeiro";
             }
 
             return (
@@ -47,6 +52,7 @@ const TabNavigator = () => {
     >
       <Tab.Screen options={{ headerShown: false }}  name="Welcome" component={Welcome} />
       <Tab.Screen options={{ title: "Atividades" }}  name="Activities" component={Activities} />
+      <Tab.Screen options={{ title: "Financeiro" }}  name="Finance" component={Finance} />
       <Tab.Screen options={{ title: "Meu Perfil" }}  name="Profile" component={Profile} />
     </Tab.Navigator>
   );
