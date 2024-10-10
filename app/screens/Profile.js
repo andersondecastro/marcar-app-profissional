@@ -1,9 +1,10 @@
 import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, ToastAndroid } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import {BASE_URL, _date, _hour} from './config';
+import React, { useCallback, useEffect, useState } from 'react';
+import {BASE_URL, _date, _hour, maskBirthday, maskCpf, maskPhone} from './config';
 import styles from '../styles.js';  
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Profile({navigation}) {
     const [data, setData] = useState([]);
@@ -23,39 +24,83 @@ export default function Profile({navigation}) {
     const showToast = (value) => {
         ToastAndroid.show(value, ToastAndroid.SHORT);
     };
+
+    const updateAvailableStatus = async () => {
+        let storedUnity = JSON.parse( await AsyncStorage.getItem('currentAddress') );
+        let token = await AsyncStorage.getItem('professionalToken');
+
+        try {
+            let data = { available: false }
+            let _currentUnitId = storedUnity._id;
+            
+            const response = await axios.put(BASE_URL + '/api/units/' + _currentUnitId + '?update_available=' + profileId, data, {headers: { 'Authorization': 'Bearer ' + token }});
+            
+            if(response.data) { AsyncStorage.removeItem('currentStatus'); }
+        } catch (err) {
+            console.log( err.message ); 
+        } 
+    };
     
     const logout = async () => {
-      let allStorageKeyItems = await AsyncStorage.getAllKeys();
-      allStorageKeyItems.forEach(async key => await AsyncStorage.removeItem(key));
-
-      allStorageKeyItems.forEach(async key => await AsyncStorage.getItem(key));
+      await updateAvailableStatus();
+      await AsyncStorage.removeItem("professionalToken");
+      await AsyncStorage.removeItem("professionalId");
+      await AsyncStorage.removeItem("currentRequestInProgress");
+      await AsyncStorage.removeItem("stateInProgress");
+      await AsyncStorage.removeItem("isStateInProgress");
+      await AsyncStorage.removeItem("currentAddress");
+      await AsyncStorage.removeItem("currentStatus");
+      
       showToast('Nos vemos em breve!');
       navigation.navigate("LoginForm");
     }
 
-    useEffect(() => {
-        const fetchInfoData = async () => {
-          setError('');
-          let token = await AsyncStorage.getItem('professionalToken');
-          
-          try {
-            const response = await axios.get(BASE_URL + '/api/professionals/me', {headers: { 'Authorization': 'Bearer ' + token }});
-            setData(response.data); 
-            setName(response.data.name);
-            setEmail(response.data.email);
-            setPhone(response.data.phone);
-            setCpf(response.data.cpf);
-            setBirthday(response.data.birthday);
-            setProfileId(response.data._id);
-          } catch (err) {
-            setError(err.message); 
-          } finally {
-            setLoading(false); 
-          }
-        };
-    
+    const handleChangeCPF = (text) => {
+      const cleanText = text.replace(/\D/g, '');
+      const maskedCpf = maskCpf(cleanText);
+      setCpf(maskedCpf);
+    };
+
+    const handleChangeBirth = (text) => {
+      const cleanText = text.replace(/\D/g, '');
+      const maskedBirth = maskBirthday(cleanText);
+      setBirthday(maskedBirth);
+    };
+
+    const handleChangePhone = (text) => {
+      const cleanText = text.replace(/\D/g, '');
+      const maskedPhone = maskPhone(cleanText);
+      setPhone(maskedPhone);
+    };
+
+    const fetchInfoData = async () => {
+      setError('');
+      let token = await AsyncStorage.getItem('professionalToken');
+      
+      try {
+        const response = await axios.get(BASE_URL + '/api/professionals/me', {headers: { 'Authorization': 'Bearer ' + token }});
+
+        if(response.data) {
+          setData(response.data); 
+          setName(response.data.name);
+          setEmail(response.data.email);
+          setPhone(response.data.phone);
+          setCpf(response.data.cpf);
+          setBirthday(response.data.birthday);
+          setProfileId(response.data._id);
+        }
+      } catch (err) {
+        setError(err.message); 
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    useFocusEffect(
+      useCallback(() => {
         fetchInfoData();
-    }, []);
+      }, [])
+    );
 
     useEffect(() => {
       const fetchReviews = async () => {
@@ -125,25 +170,25 @@ export default function Profile({navigation}) {
 
                 <Text style={styles.labelForm}>E-mail</Text>
                 <View style={styles.inputContainer}>
-                    <TextInput placeholder='Informe seu e-mail' style={styles.inputTextForm} value={email} onChangeText={text => setEmail(text)} />
+                    <TextInput placeholder='Informe seu e-mail' style={styles.inputTextForm} value={email} onChangeText={text => setEmail(text)} keyboardType='email-address' />
                     <Image source={require('../../assets/mail.png')} style={{width: 18, height: 18, marginRight: 10,}} />
                 </View>
 
                 <Text style={styles.labelForm}>CPF</Text>
                 <View style={styles.inputContainer}>
-                    <TextInput placeholder='Informe seu CPF' style={styles.inputTextForm} value={cpf} onChangeText={text => setCpf(text)} keyboardType='numeric' />
+                    <TextInput placeholder='Informe seu CPF' style={styles.inputTextForm} value={cpf} onChangeText={handleChangeCPF} keyboardType='numeric' maxLength={14} />
                     <Image source={require('../../assets/doc.png')} style={{width: 18, height: 16, marginRight: 10,}} />
                 </View>
 
                 <Text style={styles.labelForm}>Data de nascimento</Text>
                 <View style={styles.inputContainer}>
-                    <TextInput placeholder='Informe sua data de nascimento' style={styles.inputTextForm} value={birthday} onChangeText={text => setBirthday(text)} />
+                    <TextInput placeholder='Informe sua data de nascimento' style={styles.inputTextForm} value={birthday} onChangeText={handleChangeBirth} maxLength={10} />
                     <Image source={require('../../assets/birth.png')} style={{width: 18, height: 18, marginRight: 10,}} />
                 </View>
 
                 <Text style={styles.labelForm}>Telefone</Text>
                 <View style={styles.inputContainer}>
-                    <TextInput placeholder='Informe seu número' style={styles.inputTextForm} value={phone} onChangeText={text => setPhone(text)} keyboardType='phone-pad' />
+                    <TextInput placeholder='Informe seu número' style={styles.inputTextForm} value={phone} onChangeText={handleChangePhone} keyboardType='phone-pad' maxLength={15} />
                     <Image source={require('../../assets/phone.png')} style={{width: 16, height: 18, marginRight: 10,}} />
                 </View>
 

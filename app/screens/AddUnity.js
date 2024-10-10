@@ -36,8 +36,16 @@ export default function AddUnity({route, navigation}) {
 
     const saveAddress = async () => {
         try {
-            let _professionalId = await AsyncStorage.getItem('professionalId');
+            if(!cep) { 
+                ToastAndroid.show('Informe o CEP por favor.', ToastAndroid.SHORT);;
+                return; 
+            }
+            if(!number) { 
+                ToastAndroid.show('Informe o número por favor.', ToastAndroid.SHORT);;
+                return; 
+            }
 
+            let _professionalId = await AsyncStorage.getItem('professionalId');
             let _location = await getCoordinatesFromAddress( `${street} ${number} - ${neighborhood}, ${city} - ${state}` );
 
             let dataToSend = {

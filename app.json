@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "marcar",
+    "name": "Marcar para prestadores de serviço",
     "slug": "marcar-prestador",
-    "version": "1.0.0",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,15 +17,16 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#C91B1E"
+      "backgroundColor": "#E42528"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.marcar.prestador"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#C91B1E"
+        "backgroundColor": "#E42528"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",

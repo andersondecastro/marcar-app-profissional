@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 
@@ -13,30 +13,31 @@ import AddUnity from './app/screens/AddUnity';
 import RequestDetails from './app/screens/RequestDetails';
 import ServiceInProgress from './app/screens/ServiceInProgress';
 import Finance from './app/screens/Finance';
+import BankingForm from './app/screens/BankingForm';
 import FallbackTest from './app/screens/FallbackTest.js';
+import PendingRequests from './app/screens/PendingRequests.js';
 import TabNavigator from './TabNavigation'; 
 
 const Stack = createStackNavigator();
 
-const AppNavigator = ({ isLoggedIn, stateInProgress }) => {
-  let routeToStart;
-  if( isLoggedIn ){
-    if(stateInProgress == 'aceitou_chamado')
-      routeToStart = 'RequestDetails';
-    else if(stateInProgress == 'aguardando_motorista')
-      routeToStart = 'RequestDetails';
-    else if(stateInProgress == 'comecou_servico')
-      routeToStart = 'ServiceInProgress';
-    else 
-      routeToStart = "Main";
-  } else {
-      routeToStart = "RegisterForm";
-  }
-  console.log("Iniciar na rota: " , routeToStart, " .... <<< estado atual: >>> ", stateInProgress);
+const AppNavigator = ({ isLoggedIn }) => {
+  const routeToStart = () => {
+    if (isLoggedIn) {
+      return "Main";
+    } else {
+      return "LoginForm";
+    }
+  };
 
+  useEffect(() => {
+    routeToStart();
+  }, [isLoggedIn]);
+
+  console.log("| STARTING SCREEN IN: ", routeToStart());
+  
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={routeToStart}>
+      <Stack.Navigator initialRouteName={routeToStart()}>
         <Stack.Screen options={{ headerShown: false }} name="RegisterForm" component={RegisterForm} /> 
         <Stack.Screen options={{ headerShown: false }} name="LoginForm" component={LoginForm} />         
         <Stack.Screen options={{ title: "Editar meus dados" }} name="Profile" component={Profile} />         
@@ -48,6 +49,8 @@ const AppNavigator = ({ isLoggedIn, stateInProgress }) => {
         <Stack.Screen options={{ headerShown: false }} name="RequestDetails" component={RequestDetails} />
         <Stack.Screen options={{ headerShown: false }} name="ServiceInProgress" component={ServiceInProgress} />
         <Stack.Screen options={{ headerShown: false }} name="Finance" component={Finance} />
+        <Stack.Screen options={{ title: "Dados bancários" }} name="BankingForm" component={BankingForm} />
+        <Stack.Screen options={{ title: "Chamados em aberto" }} name="PendingRequests" component={PendingRequests} />
         <Stack.Screen options={{ headerShown: false }} name="FallbackTest" component={FallbackTest} />
         <Stack.Screen options={{ headerShown: false }} name="Main" component={TabNavigator} />
       </Stack.Navigator>

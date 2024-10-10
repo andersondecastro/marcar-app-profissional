@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Text, View, Image, TextInput, TouchableOpacity, ToastAndroid, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import styles from '../styles.js';  
-import {BASE_URL} from './config.js'
+import {BASE_URL, maskBirthday, maskCpf, maskPhone} from './config.js'
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,6 +14,23 @@ export default function RegisterForm({navigation}) {
     const [cpf, setCpf] = useState('');
     const [birthday, setBirthday] = useState('');
     
+    const handleChangeCPF = (text) => {
+        const cleanText = text.replace(/\D/g, '');
+        const maskedCpf = maskCpf(cleanText);
+        setCpf(maskedCpf);
+    };
+
+    const handleChangeBirth = (text) => {
+        const cleanText = text.replace(/\D/g, '');
+        const maskedBirth = maskBirthday(cleanText);
+        setBirthday(maskedBirth);
+    };
+
+    const handleChangePhone = (text) => {
+        const cleanText = text.replace(/\D/g, '');
+        const maskedPhone = maskPhone(cleanText);
+        setPhone(maskedPhone);
+    };
 
     const showToast = (value) => {
         ToastAndroid.show(value, ToastAndroid.SHORT);
@@ -64,19 +81,19 @@ export default function RegisterForm({navigation}) {
 
                     <Text style={styles.labelForm}>CPF</Text>
                     <View style={styles.inputContainer}>
-                        <TextInput placeholder='Informe seu CPF' style={styles.inputTextForm} value={cpf} onChangeText={text => setCpf(text)} keyboardType='numeric' />
+                        <TextInput placeholder='Informe seu CPF' style={styles.inputTextForm} value={cpf} onChangeText={handleChangeCPF} keyboardType='numeric' maxLength={14} />
                         <Image source={require('../../assets/doc.png')} style={{width: 18, height: 18, marginRight: 10,}} />
                     </View>
 
                     <Text style={styles.labelForm}>Data de nascimento</Text>
                     <View style={styles.inputContainer}>
-                        <TextInput placeholder='Informe sua data de nascimento' style={styles.inputTextForm} value={birthday} onChangeText={text => setBirthday(text)} />
+                        <TextInput placeholder='Informe sua data de nascimento' style={styles.inputTextForm} value={birthday} onChangeText={handleChangeBirth}  maxLength={10}/>
                         <Image source={require('../../assets/birth.png')} style={{width: 18, height: 18, marginRight: 10,}} />
                     </View>
 
                     <Text style={styles.labelForm}>Telefone(celular)</Text>
                     <View style={styles.inputContainer}>
-                        <TextInput placeholder='Informe seu número celular' style={styles.inputTextForm} value={phone} onChangeText={text => setPhone(text)} />
+                        <TextInput placeholder='Informe seu número celular' style={styles.inputTextForm} value={phone} onChangeText={handleChangePhone} keyboardType='phone-pad' maxLength={15} />
                         <Image source={require('../../assets/phone.png')} style={{width: 15, height: 18, marginRight: 10,}} />
                     </View>
 

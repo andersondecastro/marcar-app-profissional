@@ -19,6 +19,10 @@ const statusMap = {
         image: require('../../assets/encerrado.png'),
         label: 'ENCERRADO'
       }, 
+  abandonado: {
+        image: require('../../assets/abandonado.png'),
+        label: 'ABANDONADO'
+     },   
   concluido: {
         image: require('../../assets/concluido.png'),
         label: 'CONCLUIDO'

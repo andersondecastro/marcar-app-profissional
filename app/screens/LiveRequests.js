@@ -6,16 +6,53 @@ import CountdownTimer from './Counter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 
-const time_miliseconds = 100000;
+const time_miliseconds = 30000;
 
 const WebSocketURL = BASE_URL_WS;
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function RealTimeCallsScreen() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
   const navigation = useNavigation();
+
+  const handleNotifications = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    if(status !== 'granted')  {
+      ToastAndroid.show('Você não habilitou as notificações', ToastAndroid.SHORT);
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'MARCAR - Tem serviço na área! ',
+          body: 'Você está recebendo um chamado de serviço...',
+          data: {screen: 'Welcome'}
+        },
+        trigger: {
+          seconds: 1,
+        }
+      })
+    }
+  }
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const { data } = response.notification.request.content;
+      if (data.screen) {
+        navigation.navigate(data.screen);
+      }
+    });
+    return () => subscription.remove();
+  }, [navigation]);
 
   const updateAvailableStatus = async () => {
     let storedUnity = JSON.parse(await AsyncStorage.getItem('currentAddress'));
@@ -46,7 +83,7 @@ export default function RealTimeCallsScreen() {
       let token = await AsyncStorage.getItem('professionalToken');
       let _professionalId = await AsyncStorage.getItem('professionalId');
       let currentUnity = JSON.parse(await AsyncStorage.getItem('currentAddress'));
-      let _currentRequestId = item._id;
+      let _currentRequestId = item?._id || item?.requestId;
       let data = { status: 'aceito', unity_id: currentUnity._id };
 
       await sendWebSocketEvent({
@@ -55,15 +92,11 @@ export default function RealTimeCallsScreen() {
         unityId: currentUnity._id,
         professionalId: _professionalId
       });
-
-      const response = await axios.put(
-        BASE_URL+'/api/requests/'+_currentRequestId,
-        data,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
+      
+      const response = await axios.put( BASE_URL+'/api/requests/'+_currentRequestId, data, { headers: { 'Authorization': `Bearer ${token}` } });
       
       if (response.data) {
-        updateAvailableStatus();
+        await updateAvailableStatus();
         await AsyncStorage.setItem('currentRequestInProgress', JSON.stringify(item._id));
         await AsyncStorage.setItem("stateInProgress", "aceitou_chamado");
         await AsyncStorage.setItem("isStateInProgress", "true");
@@ -78,45 +111,69 @@ export default function RealTimeCallsScreen() {
     const socket = new WebSocket(WebSocketURL);
 
     socket.onopen = () => {
-      console.log('Conectado ao servidor [via accept request]');
+      console.log('Conectado ao servidor WebSocket');
       setLoading(false);
     };
 
     socket.onmessage = (event) => {
-        if(event.data.length<=0) return;
-        
-        const chamado = JSON.parse(event.data);
-        
-        if (chamado.type == 'new_call') {
-            Vibration.vibrate([500, 500]);
+      if (event.data?.type == 'ping') {
+          console.log('Recebido ping, enviando PONG');
+          socket.send(JSON.stringify({ type: 'pong', time: (new Date()).getTime() }));
+          return;
+      }
 
-            const chamadoResultId = chamado.result._id;
-            const timeoutId = setTimeout(() => {
-                setCalls((currentCalls) => 
-                    currentCalls.filter(c => c.result?._id !== chamadoResultId)
-                );
-            }, time_miliseconds);
+      const chamado = typeof event.data == 'object' ? (event.data) : JSON.parse(event.data);
+      
+      if (chamado.type == 'new_call' || chamado.type == 'new_call_again') {
+        Vibration.vibrate([500, 500]);
+        handleNotifications();
 
-            setCalls((prevCalls) => [
-                ...prevCalls,
-                { ...chamado.result, timeoutId }
-            ]);
-        }
+        const chamadoResultId = chamado.result._id;
+        const timeoutId = setTimeout(() => {
+          setCalls((currentCalls) => 
+            currentCalls.filter(c => c?._id !== chamadoResultId)
+          );
+        }, time_miliseconds);
 
-        if(chamado.type == 'accept_call') {
-          let requestToToRemove = chamado.requestId;
-          
-          setCalls((currentCalls) => {
-            let timeoutToClear = currentCalls.find(i => i._id == requestToToRemove).timeoutId;
-            clearTimeout(timeoutToClear);
-            // return currentCalls.filter(call => call.requestId !== requestToToRemove);
-            return [];
-          });
-        }
+        setCalls((prevCalls) => [
+          ...prevCalls,
+          { ...chamado.result, timeoutId }
+        ]);
+      }
+
+      if (chamado.type === 'accept_call') {
+        let requestToRemove = chamado.requestId;
+
+        setCalls((currentCalls) => {
+          const callToRemove = currentCalls.find(i => i._id === requestToRemove);
+          if (callToRemove) {
+            clearTimeout(callToRemove.timeoutId);
+          }
+          // Retornamos o array filtrado para remover a chamada
+          return currentCalls.filter(call => call._id !== requestToRemove);
+        });
+      }
+
+      if (chamado.type === 'cancel_call') {
+        let requestToRemove = chamado.result.requestId;
+
+        setCalls((currentCalls) => {
+          const callToRemove = currentCalls.find(i => i._id === requestToRemove);
+          if (callToRemove) {
+            clearTimeout(callToRemove.timeoutId);
+          }
+          // Retornamos o array filtrado para remover a chamada
+          return currentCalls.filter(call => call._id !== requestToRemove);
+        });
+      }
     };
 
     socket.onclose = () => {
-      console.log('Desconectado do servidor [via accept request]');
+      console.log('Desconectado do servidor WebSocket');
+    };
+
+    socket.onerror = (error) => {
+      console.error('Erro no WebSocket:', error);
     };
 
     return () => {
@@ -145,9 +202,9 @@ export default function RealTimeCallsScreen() {
           data={calls}
           keyExtractor={(item,index) => index}
           renderItem={({ item }) => (
-            <View style={styles.item}>
+            <View style={[styles.item, {backgroundColor: '#FeFeFe'}]}>
               <View style={{ alignItems: 'flex-start'}}>
-                <Text style={{paddingVertical: 2, marginHorizontal: 5,}}>Você receberá</Text>
+                <Text style={{paddingVertical: 2, marginHorizontal: 5,}}>Valor do serviço</Text>
                 <Text style={styles.price}> {item.subtotal_price ? 'R$ ' + item.subtotal_price : ''}</Text>
               </View>
 

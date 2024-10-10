@@ -32,6 +32,24 @@ export default function ServiceInProgress({navigation}) {
         }, pressDuration);
     };
 
+    const reconnectProfessionalAgain = async () => {
+        try {
+            let token = await AsyncStorage.getItem('professionalToken');
+            let profileId = await AsyncStorage.getItem('professionalId');
+            let storedUnity = JSON.parse( await AsyncStorage.getItem('currentAddress') );
+            let data = { available: true }
+            let _currentUnitId = storedUnity._id;
+            
+            const response = await axios.put(BASE_URL + '/api/units/' + _currentUnitId + '?update_available=' + profileId, data, {headers: { 'Authorization': 'Bearer ' + token }});
+            if(response.data){
+                AsyncStorage.setItem('currentStatus', JSON.stringify(true));
+                ToastAndroid.show( 'Você está online.', ToastAndroid.SHORT); 
+            }
+        } catch (error) {
+            console.log('Não foi possível reconectar o prestador de serviço após a finalização do serviço...');
+        }
+    }
+
     const finishService = async () => {
         Vibration.vibrate([500,1000,500]);
         
@@ -54,6 +72,7 @@ export default function ServiceInProgress({navigation}) {
                 });
 
                 ToastAndroid.show( 'Parabéns, serviço encerrado!', ToastAndroid.SHORT); 
+                await reconnectProfessionalAgain();
                 navigation.navigate("Main");
             }
         } catch (err) {

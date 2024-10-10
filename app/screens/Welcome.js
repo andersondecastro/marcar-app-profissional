@@ -5,15 +5,47 @@ import { BASE_URL } from './config';
 import LiveRequests from './LiveRequests';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import sendWebSocketEvent from './sendWebSocketEvent';
 
 export default function Welcome({route, navigation}) {
     const [isEnabled, setIsEnabled] = useState(false);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const [name, setName] = useState('');
-    const [profileId, setProfileId] = useState([]);
+    const [profileId, setProfileId] = useState(null);
     const [lastActiveAddress, setLastActiveAddress] = useState(null);
+
+    const fetchInfoData = async () => {
+        setError('');
+        let token = await AsyncStorage.getItem('professionalToken');
+        
+        try {
+          const response = await axios.get(BASE_URL + '/api/professionals/me', {headers: { 'Authorization': 'Bearer ' + token }});
+          setName(response.data?.name);
+          setProfileId(response.data?._id);
+        } catch (err) {
+          setError(err.message); 
+        } finally {
+          setLoading(false); 
+        }
+    };
+
+    const checkRequestStatusInProgress = async () => {
+      const token = await AsyncStorage.getItem('professionalToken');
+      const _professionalId = await AsyncStorage.getItem('professionalId');
+      
+      try {
+        let results = await axios.get(BASE_URL+'/api/requests?professionalId='+_professionalId, {token});
+        let listResult = results.data.filter(i => ["aceito", "andamento"].includes(i.status)).map(item => item); // todos os requests do profissional logado.
+        
+        if(listResult.length > 0){
+          navigation.navigate('PendingRequests', {data: listResult})
+        }
+        return;
+      } catch (error) {
+        console.log("ERR:  " , error)
+        return false;
+      }
+    };
 
     useFocusEffect(
       React.useCallback(() => {
@@ -23,29 +55,12 @@ export default function Welcome({route, navigation}) {
           setLastActiveAddress(_currentAddress ? JSON.parse(_currentAddress) : _currentAddress);
           setIsEnabled(JSON.parse(_currentStatus));
         };
+        checkRequestStatusInProgress();
         setAddress();
+        fetchInfoData();
       }, [])
     );
     
-    useEffect(() => {
-        const fetchInfoData = async () => {
-          setError('');
-          let token = await AsyncStorage.getItem('professionalToken');
-          
-          try {
-            const response = await axios.get(BASE_URL + '/api/professionals/me', {headers: { 'Authorization': 'Bearer ' + token }});
-            setName(response.data.name);
-            setProfileId(response.data._id);
-          } catch (err) {
-            setError(err.message); 
-          } finally {
-            setLoading(false); 
-          }
-        };
-    
-        fetchInfoData();
-      }, []);
-
     const updateAvailableStatus = async () => {
         let storedUnity = JSON.parse( await AsyncStorage.getItem('currentAddress') );
         let token = await AsyncStorage.getItem('professionalToken');
@@ -81,7 +96,7 @@ export default function Welcome({route, navigation}) {
             </TouchableOpacity>
 
             <View style={{padding: 20, backgroundColor: '#f7f7f7', borderRadius: 7, marginTop: 40, marginHorizontal: 20, borderColor: '#888', borderWidth: 0.5}}>
-                <Text style={{color: '#000', fontSize: 21, fontWeight: 'bold'}}>Olá {name}!</Text>
+                <Text style={{color: '#000', fontSize: 21, fontWeight: 'bold'}}>Olá {name || ''}!</Text>
                 <View style={{flexDirection: 'row'}}>
                     <Text style={[styles.labelTxt]}> Você está </Text>
                     <Text style={{ color: textColor }}> {isEnabled ? 'ONLINE' : 'OFFLINE'} </Text>

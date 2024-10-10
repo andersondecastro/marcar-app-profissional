@@ -21,6 +21,14 @@ export default function RequestDetails({navigation}) {
             startService();
         }, pressDuration);
     };
+    
+    const handleLongPressCancel = () => {
+        setIsPressed(true);
+        setTimeout(() => {
+            setIsPressed(false);
+            leaveRequest();
+        }, pressDuration);
+    };
 
     const handleChange = (text) => {
         const formatted = text.replace(/[^0-9]/g, '').slice(0, 4);
@@ -62,9 +70,10 @@ export default function RequestDetails({navigation}) {
         try {
             const token = await AsyncStorage.getItem('professionalToken');
             const _currentRequestId = JSON.parse( await AsyncStorage.getItem('currentRequestInProgress') );
-            let data = { status: 'andamento' };
             const _currentprofessionalId = await AsyncStorage.getItem('professionalId');
             await AsyncStorage.setItem("stateInProgress", "comecou_servico");
+            
+            let data = { status: 'andamento' };
             
             const response = await axios.put(BASE_URL + '/api/requests/' + _currentRequestId, data, {headers: { 'Authorization': 'Bearer ' + token }});
             
@@ -76,6 +85,32 @@ export default function RequestDetails({navigation}) {
                 });
 
                 navigation.navigate("ServiceInProgress");
+            }
+        } catch (err) {
+            ToastAndroid.show( err.message, ToastAndroid.SHORT); 
+        } 
+    }
+
+    const leaveRequest = async () => {
+        Vibration.vibrate([500,2000,500]);
+        try {
+            const token = await AsyncStorage.getItem('professionalToken');
+            const _currentRequestId = JSON.parse( await AsyncStorage.getItem('currentRequestInProgress') );
+            const _currentprofessionalId = await AsyncStorage.getItem('professionalId');
+            await AsyncStorage.removeItem("stateInProgress");
+            
+            let data = { status: 'abandonado' };
+            
+            const response = await axios.put(BASE_URL + '/api/requests/' + _currentRequestId, data, {headers: { 'Authorization': 'Bearer ' + token }});
+            
+            if(response.data && response.data.status == 'abandonado') {
+                await sendWebSocketEvent({
+                    type: 'leave_call',
+                    requestId: _currentRequestId,
+                    professionalId: _currentprofessionalId,
+                });
+
+                navigation.navigate("Main");
             }
         } catch (err) {
             ToastAndroid.show( err.message, ToastAndroid.SHORT); 
@@ -97,17 +132,16 @@ export default function RequestDetails({navigation}) {
             </View>
 
             <View style={{flexDirection: 'row', justifyContent: 'space-between', maxWidth: '100%', alignItems: 'center', borderWidth: 0.5, borderColor: '#DDD', borderRadius: 7, marginVertical: 20, padding: 10}}>
-                <View style={{flexDirection: 'column', alignItems: 'center'}}>
+                {/* <View style={{flexDirection: 'column', alignItems: 'center'}}>
                     <Text style={{fontSize: 12}}> Chegada prevista:  </Text>
                     <Text style={{fontSize: 21, fontWeight: '400'}}> {estimatedArrive}  </Text>
                 </View>
 
-                <View style={{width: 1, height: '100%', backgroundColor: '#DDD'}}>
-                </View>
+                <View style={{width: 1, height: '100%', backgroundColor: '#DDD'}}></View> */}
 
                 <View style={{flexDirection: 'column', alignItems: 'center'}}>
                     <Text style={{fontSize: 12}}> Serviço solicitado:  </Text>
-                    <Text style={{fontSize: 18, fontWeight: '400'}}> {customerData?.services.map(i=>i.name).join(' | ')}  </Text>
+                    <Text style={{fontSize: 18, fontWeight: '400'}}>{customerData?.services.map(i=>i.name).join(' | ')}  </Text>
                 </View>
             </View>
 
@@ -132,6 +166,14 @@ export default function RequestDetails({navigation}) {
             >
                 <Text style={[styles.buttonText, isPressed && styles.buttonTextPressed]}>COMEÇAR SERVIÇO</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+                style={[styles.button, isPressed && styles.buttonPressedCancel, {backgroundColor: '#bbb'}]}
+                onLongPress={handleLongPressCancel}
+                delayLongPress={pressDuration} 
+            >
+                <Text style={[styles.buttonText, isPressed && styles.buttonTextPressed]}>Cancelar</Text>
+            </TouchableOpacity>
             
         </View>
     )
@@ -154,6 +196,9 @@ const styles = StyleSheet.create({
     buttonPressed: {
       backgroundColor: '#888', 
     },
+    buttonPressedCancel: {
+        backgroundColor: '#111', 
+      },
     buttonText: {
       color: '#fff',
       fontSize: 16,

@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from 'react'
-
 import AppNavigator from './Navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './app/screens/config';
+import { WebSocketProvider } from './WebSocketProvider';
 import axios from 'axios';
+import * as Notifications from 'expo-notifications';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(null);
-  const [stateInProgress, setStateInProgress] = useState(null);
+  
+  useEffect(() => {
+    const requestNotificationPermission = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permissão para receber notificações é necessária!');
+        return;
+      }
+      console.log('Permissão concedida para notificações');
+    };
+
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -18,22 +31,6 @@ export default function App() {
 
     checkLoginStatus();
   }, []);
-
-  useEffect(() => {
-    const checkLastState = async () => {
-      let isStateInProgress = JSON.parse( await AsyncStorage.getItem("isStateInProgress") );
-      console.log("[ is state: ", isStateInProgress, " - tipo:  ", typeof isStateInProgress , "]");
-
-      let stateInProgress = await AsyncStorage.getItem("stateInProgress");
-      console.log("what state: ", stateInProgress);
-
-      if(isStateInProgress) {
-        setStateInProgress(stateInProgress);
-      }
-    }
-
-    checkLastState();
-  }, [])
 
   const isTokenValid = async (token) => {
     if (!token) return false;
@@ -51,6 +48,8 @@ export default function App() {
   }
 
   return (
-    <AppNavigator isLoggedIn={isLoggedIn} stateInProgress={stateInProgress} />
+    <WebSocketProvider>
+      <AppNavigator isLoggedIn={isLoggedIn}  />
+    </WebSocketProvider>
   )
 }
